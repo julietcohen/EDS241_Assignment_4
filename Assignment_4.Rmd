@@ -1,0 +1,129 @@
+---
+title: 'Assignment 4 - EDS 241: Environmental Policy Evaluation'
+author: "Juliet Cohen"
+date: '`r format(Sys.time(), "%m/%d/%Y")`'
+output:
+  pdf_document:
+    toc: false
+    number_sections: yes
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, include = FALSE}
+library(dplyr)
+library(estimatr)
+library(knitr)
+library(stargazer)
+library(tidyverse)
+```
+
+```{r}
+data <- read.csv("/Users/juliet/Documents/MEDS/EDS_241_Env_Policy_Eval/Assignments/Assignment_4/EDS241_Assignment_4/EU_sardines.csv")
+```
+
+
+This question will ask you to estimate the price elasticity of demand for fresh sardines across **56 ports** located in **4 European countries** with **monthly** data from **2013 to 2019**. The data are contained in the file EU_sardines.csv, which is available on Gauchospace. Each row in the data file is a combination of port location (where the fish is landed and sold) in a given year and month. You can ignore the fact that the sample is not balanced (the number of monthly observations varies across ports).
+
+For the assignment, you will need the following variables: **year, month, country, port (port where sardines are landed and sold), price_euro_kg (price per kg in €), and volume_sold_kg (quantity of sardines sold in kg).** In the questions below, I use `log()` to denote the natural logarithm.
+
+(a) Estimate a bivariate regression of log(volume_sold_kg) on log(price euro_kg). What is the
+price elasticity of demand for sardines? Test the null hypothesis that the price elasticity is equal
+to -1.
+
+```{r}
+data_log <- data %>% 
+  mutate(log_volume_sold_kg = log(volume_sold_kg),
+         log_price_euro_kg = log(price_euro_kg))
+
+model_price_vol <- lm(log_volume_sold_kg ~ log_price_euro_kg, data = data_log)
+summary(model_price_vol)
+
+model_price_vol$coefficients[[2]]
+
+# if price increases 1%, the volume sold decreases by 1.545%
+
+#model_price_vol_table <- tidy(model_price_vol)
+# model_price_vol_table %>%
+#   select(term, estimate, std.error, p.value, conf.low, conf.high) %>% 
+#   kable()
+
+# F-test for non-weak and relevant instruments (Lecture 9, slides 13-14)
+linearHypothesis(model_price_vol, c("log_price_euro_kg=-1"), white.adjust = "hc2")
+# the f-stat is greater than 10 (it is 391) so that is good
+```
+
+**The price elasticity of demand for sardines is `r model_price_vol$coefficients[[2]]', meaning that if the price of sardines increases by 1%, the volume sold decreases by model_price_vol$coefficients[[2]] percent. We can reject the null hypothesis that the price elasticity is equal to zero because our F-test shows that the F-statistic is much greater than 10.**
+
+(b) Like in Lecture 8 (see the IV.R script), we will use wind_m_s as an instrument for
+log(price_euro_kg). To begin, estimate the first-stage regression relating log(price_euro_kg) to
+wind_m_s. Interpret the estimated coefficient on wind speed. Does it have the expected sign?
+Also test for the relevance of the instrument and whether it is a “weak” instrument by reporting
+the proper F-statistic.
+
+```{r}
+# first stage regression
+model_price_wind <- lm(log_price_euro_kg ~ wind_m_s, data = data_log)
+summary(model_price_wind)
+
+# generate F-statistic
+f <- linearHypothesis(model_price_wind, c("wind_m_s=0"), white.adjust = "hc2")
+summary(f)
+```
+
+**The estimated coefficient for wind speed is `r model_price_wind$coefficients[[2]]`, which represents the percent increase in price per kg in € for every 1 percent increase in wind speed. Yes, this coefficient has the expected sign, because I presume that more windy conditions make fishing more difficult, which would result in the cost of sardines to increase. The proper F-statistic is `r f$F`, which is greater than 10, indicating that this is a non-weak and relevant instrument.**
+
+(c) Estimate the TSLS estimator of the price elasticity of demand for sardines using wind_m_s
+as an instrument for log(price_euro_kg). What is the estimated price elasticity of demand for
+sardines?
+
+```{r}
+tsls_vol_price_wind <- ivreg(log_volume_sold_kg ~ log_price_euro_kg | wind_m_s, data = data_log)
+summary(tsls_vol_price_wind)
+
+# put it all in 1 table and get heteroskedasticity-robust SE
+# se_vol_price_wind <- starprep(model_price_vol, model_price_wind, stat = c("std.error"), se_type = "HC2", alpha = 0.05)
+# summary(se_vol_price_wind)
+```
+
+**The estimated price elasticity of demand for sardines is `r tsls_price_wind$coefficients[[2]]`, which represents the percent decrease in volume of sardines sold for every 1% increase in price, using wind as an instrument.**
+
+(d) Repeat the exercise in (c), but include fixed effects for each year, month, and country. [Hint:
+you can use the command “as.factor(country) + as.factor(year) +as.factor(month)” to the ivreg
+function in R]. Report the estimated price elasticity of demand and the F-statistic testing for
+relevant and non-weak instruments.
+
+```{r}
+# example:
+#tsls2 <- ivreg(log_tots ~ log_price + day1 + day2 + day3 + day4 | day1 + day2 + day3 + day4 + windspd + cold, data = FULTON)
+
+# same regression with fixed effects for year, month, and country
+fixed_effects_tsls_vol_price_wind <- ivreg(log_volume_sold_kg ~ log_price_euro_kg +
+                               + factor(country) + factor(year) + factor(month) | factor(country) + factor(year) + factor(month) + wind_m_s, data = data_log)
+
+summary(fixed_effects_tsls_vol_price_wind)
+
+#se_fixed_effects_tsls_vol_price_wind <- starprep(fixed_effects_tsls_vol_price_wind, stat = c("std.error"), se_type = "HC2", alpha = 0.05) 
+
+# Calculate robust standard errors for TSLS1 using sandwich and lmtest packages (starprep() does not like ivreg() objects)
+se_tsls <- coeftest(fixed_effects_tsls_vol_price_wind, vcov = vcovHC(fixed_effects_tsls_vol_price_wind, type = "HC2"))[, "Std. Error"]
+
+# Combine standard errors and output results with stargazer()
+se_model <- list(se_tsls)
+stargazer(fixed_effects_tsls_vol_price_wind, se = se_model, type="text")
+```
+
+
+
+
+
+
+
+
+
+
