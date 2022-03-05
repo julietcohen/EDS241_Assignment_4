@@ -21,6 +21,10 @@ library(estimatr)
 library(knitr)
 library(stargazer)
 library(tidyverse)
+library(AER)
+library(lmtest)
+library(car)
+library(lfe)
 ```
 
 ```{r}
@@ -85,7 +89,7 @@ summary(tsls_vol_price_wind)
 # summary(se_vol_price_wind)
 ```
 
-\noindent - **The estimated price elasticity of demand for sardines is `r tsls_price_wind$coefficients[[2]]`, which represents the percent decrease in volume of sardines sold for every 1% increase in price, using wind as an instrument.**
+\noindent - **The estimated price elasticity of demand for sardines is `r tsls_vol_price_wind$coefficients[[2]]`, which represents the percent decrease in volume of sardines sold for every 1% increase in price, using wind as an instrument.**
 
 # (d) Repeat the exercise in (c), but include fixed effects for each year, month, and country. [Hint: you can use the command “as.factor(country) + as.factor(year) +as.factor(month)” to the ivreg function in R]. Report the estimated price elasticity of demand and the F-statistic testing for relevant and non-weak instruments.
 
