@@ -27,6 +27,8 @@ library(car)
 library(lfe)
 ```
 
+Read in data:
+
 ```{r}
 data <- read.csv("/Users/juliet/Documents/MEDS/EDS_241_Env_Policy_Eval/Assignments/Assignment_4/EDS241_Assignment_4/EU_sardines.csv")
 ```
@@ -36,9 +38,7 @@ This question will ask you to estimate the price elasticity of demand for fresh 
 
 For the assignment, you will need the following variables: **year, month, country, port (port where sardines are landed and sold), price_euro_kg (price per kg in €), and volume_sold_kg (quantity of sardines sold in kg).** In the questions below, I use `log()` to denote the natural logarithm.
 
-# (a) Estimate a bivariate regression of log(volume_sold_kg) on log(price euro_kg). What is the
-price elasticity of demand for sardines? Test the null hypothesis that the price elasticity is equal
-to -1.
+# (a) Estimate a bivariate regression of log(volume_sold_kg) on log(price euro_kg). What is the price elasticity of demand for sardines? Test the null hypothesis that the price elasticity is equal to -1.
 
 ```{r}
 data_log <- data %>% 
@@ -62,7 +62,7 @@ linearHypothesis(model_price_vol, c("log_price_euro_kg=-1"), white.adjust = "hc2
 # the f-stat is greater than 10 (it is 391) so that is good
 ```
 
-\noindent - **The price elasticity of demand for sardines is `r model_price_vol$coefficients[[2]]', meaning that if the price of sardines increases by 1%, the volume sold decreases by model_price_vol$coefficients[[2]] percent. We can reject the null hypothesis that the price elasticity is equal to zero because our F-test shows that the F-statistic is much greater than 10.**
+\noindent - **The price elasticity of demand for sardines is `r model_price_vol$coefficients[[2]]`, meaning that if the price of sardines increases by 1%, the volume sold decreases by model_price_vol$coefficients[[2]] percent. We can reject the null hypothesis that the price elasticity is equal to zero because our F-test shows that the F-statistic is much greater than 10.**
 
 # (b) Like in Lecture 8 (see the IV.R script), we will use wind_m_s as an instrument for log(price_euro_kg). To begin, estimate the first-stage regression relating log(price_euro_kg) to wind_m_s. Interpret the estimated coefficient on wind speed. Does it have the expected sign? Also test for the relevance of the instrument and whether it is a “weak” instrument by reporting the proper F-statistic.
 
@@ -83,7 +83,6 @@ summary(f)
 ```{r}
 tsls_vol_price_wind <- ivreg(log_volume_sold_kg ~ log_price_euro_kg | wind_m_s, data = data_log)
 summary(tsls_vol_price_wind)
-
 # put it all in 1 table and get heteroskedasticity-robust SE
 # se_vol_price_wind <- starprep(model_price_vol, model_price_wind, stat = c("std.error"), se_type = "HC2", alpha = 0.05)
 # summary(se_vol_price_wind)
@@ -91,34 +90,23 @@ summary(tsls_vol_price_wind)
 
 \noindent - **The estimated price elasticity of demand for sardines is `r tsls_vol_price_wind$coefficients[[2]]`, which represents the percent decrease in volume of sardines sold for every 1% increase in price, using wind as an instrument.**
 
-# (d) Repeat the exercise in (c), but include fixed effects for each year, month, and country. [Hint: you can use the command “as.factor(country) + as.factor(year) +as.factor(month)” to the ivreg function in R]. Report the estimated price elasticity of demand and the F-statistic testing for relevant and non-weak instruments.
+# (d) Repeat the exercise in (c), but include fixed effects for each year, month, and country. [Hint: you can use the command “as.factor(country) + as.factor(year) + as.factor(month)” to the ivreg function in R]. Report the estimated price elasticity of demand and the F-statistic testing for relevant and non-weak instruments.
 
 ```{r}
-fs <- lm(log_price_euro_kg ~ factor(country) + factor(year) + factor(month) + wind_m_s, data = data_log)
-summary(fs)
+fe_model <- lm(log_price_euro_kg ~ factor(country) + factor(year) + factor(month) + wind_m_s, data = data_log)
+summary(fe_model)
 
-# Calculate robust standard errors for fs using starprep()
-se_fs <- starprep(fs, stat = c("std.error"), se_type = "HC2", alpha = 0.05) 
-
-# example:
-#tsls2 <- ivreg(log_tots ~ log_price + day1 + day2 + day3 + day4 | day1 + day2 + day3 + day4 + windspd + cold, data = FULTON)
+linearHypothesis(fe_model, c("wind_m_s=0"), white.adjust = "hc2")
 
 # same regression with fixed effects for year, month, and country
-fixed_effects_tsls_vol_price_wind <- ivreg(log_volume_sold_kg ~ log_price_euro_kg +
+fe_tsls_vol_price_wind <- ivreg(log_volume_sold_kg ~ log_price_euro_kg +
                                + factor(country) + factor(year) + factor(month) | factor(country) + factor(year) + factor(month) + wind_m_s, data = data_log)
 
-#summary(fixed_effects_tsls_vol_price_wind)
-
-# Calculate robust standard errors for TSLS1 using sandwich and lmtest packages (starprep() does not like ivreg() objects)
-se_tsls <- coeftest(fixed_effects_tsls_vol_price_wind, vcov = vcovHC(fixed_effects_tsls_vol_price_wind, type = "HC2"))[, "Std. Error"]
-
-# Combine standard errors and output results with stargazer()
-se_models <- append(se_fs, list(se_tsls))
-stargazer(fs, fixed_effects_tsls_vol_price_wind, se = se_models, type="text")
+summary(fe_tsls_vol_price_wind)
 ```
 
 
-\noindent - **The estimated price elasticity of demand is -1.250. The F-statistic is 12.695, which is greater than 10 and is significant with a p-value threshold of 0.05, so these instruments are non-weak and relevant.**
+\noindent - **The estimated price elasticity of demand is -1.250. The F-statistic is 77.658, which is greater than 10, so these instruments are non-weak and relevant.**
 
 
 
