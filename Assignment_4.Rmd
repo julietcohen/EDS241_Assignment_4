@@ -62,7 +62,7 @@ linearHypothesis(model_price_vol, c("log_price_euro_kg=-1"), white.adjust = "hc2
 # the f-stat is greater than 10
 ```
 
-\noindent - **The price elasticity of demand for sardines is `r model_price_vol$coefficients[[2]]`, meaning that if the price of sardines increases by 1%, the volume sold decreases by `r model_price_vol$coefficients[[2]]` percentage points. We can reject the null hypothesis that the price elasticity is equal to zero because our F-test shows that the F-statistic is 48.724, which much greater than 10.**
+\noindent - **The price elasticity of demand for sardines is `r model_price_vol$coefficients[[2]]`, meaning that if the price of sardines increases by 1%, the volume sold decreases by `r model_price_vol$coefficients[[2]]` percentage points. We can reject the null hypothesis that the price elasticity of demand is equal to zero because the p-value is shown as significant at the 0.001 level. Our `linearHypothesis()` output shows that the F-statistic is 48.724, which greater than 10.**
 
 # (b) Like in Lecture 8 (see the IV.R script), we will use wind_m_s as an instrument for log(price_euro_kg). To begin, estimate the first-stage regression relating log(price_euro_kg) to wind_m_s. Interpret the estimated coefficient on wind speed. Does it have the expected sign? Also test for the relevance of the instrument and whether it is a “weak” instrument by reporting the proper F-statistic.
 
@@ -75,7 +75,7 @@ summary(model_price_wind)
 linearHypothesis(model_price_wind, c("wind_m_s=0"), white.adjust = "hc2")
 ```
 
-\noindent - **The estimated coefficient for wind speed is `r model_price_wind$coefficients[[2]]`, which represents the percent increase in price per kg in € for every 1 percent increase in wind speed. Yes, this coefficient has the expected sign, because I presume that more windy conditions make fishing more difficult, which would result in the cost of sardines to increase. The proper F-statistic is 144.65, which is greater than 10, indicating that this is a non-weak instrument.**
+\noindent - **The estimated coefficient for wind speed is `r model_price_wind$coefficients[[2]]`, which represents the percent increase in price per kg in € for every 1 percent increase in wind speed. Yes, this coefficient has the expected sign, because I presume that more windy conditions make fishing more difficult, which would result in the cost of sardines to increase. The F-statistic is 144.65, which is greater than 10, indicating that this is a non-weak instrument.**
 
 # (c) Estimate the TSLS estimator of the price elasticity of demand for sardines using wind_m_s as an instrument for log(price_euro_kg). What is the estimated price elasticity of demand for sardines?
 
@@ -100,7 +100,8 @@ fe_tsls_vol_price_wind <- ivreg(log_volume_sold_kg ~ log_price_euro_kg +
                                + as.factor(month) | as.factor(country) 
                                + as.factor(year) + as.factor(month) 
                                + wind_m_s, data = data_log)
-# ivreg() is running 2 first stage least regressions, first with the coefficients on the right side of | and then with the coefficients on the left
+# ivreg() is running 2 first stage least regressions, first with the coefficients on the right side 
+# of | and then with the coefficients on the left
 summary(fe_tsls_vol_price_wind)
 ```
 
