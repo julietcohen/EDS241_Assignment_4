@@ -62,7 +62,7 @@ linearHypothesis(model_price_vol, c("log_price_euro_kg=-1"), white.adjust = "hc2
 # the f-stat is greater than 10 (it is 391) so that is good
 ```
 
-\noindent - **The price elasticity of demand for sardines is `r model_price_vol$coefficients[[2]]`, meaning that if the price of sardines increases by 1%, the volume sold decreases by model_price_vol$coefficients[[2]] percent. We can reject the null hypothesis that the price elasticity is equal to zero because our F-test shows that the F-statistic is much greater than 10.**
+\noindent - **The price elasticity of demand for sardines is `r model_price_vol$coefficients[[2]]`, meaning that if the price of sardines increases by 1%, the volume sold decreases by model_price_vol$coefficients[[2]] percentage points. We can reject the null hypothesis that the price elasticity is equal to zero because our F-test shows that the F-statistic is 48.724, which much greater than 10.**
 
 # (b) Like in Lecture 8 (see the IV.R script), we will use wind_m_s as an instrument for log(price_euro_kg). To begin, estimate the first-stage regression relating log(price_euro_kg) to wind_m_s. Interpret the estimated coefficient on wind speed. Does it have the expected sign? Also test for the relevance of the instrument and whether it is a “weak” instrument by reporting the proper F-statistic.
 
