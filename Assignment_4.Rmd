@@ -47,9 +47,11 @@ data_log <- data %>%
 
 model_price_vol <- lm(log_volume_sold_kg ~ log_price_euro_kg, data = data_log)
 summary(model_price_vol)
+
+linearHypothesis(model_price_vol, c("log_price_euro_kg=-1"), white.adjust = "hc2")
 ```
 
-\noindent - **The price elasticity of demand for sardines is `r model_price_vol$coefficients[[2]]`, meaning that if the log price per kg of sardines (in €) increases by 1 percent, the log volume sold (in kg) decreases by `r model_price_vol$coefficients[[2]]` percentage points. We can reject the null hypothesis that the price elasticity of demand is equal to -1 because the p-value for this coefficient is smaller than 0.05, so this is a statistically significant result.**
+\noindent - **The price elasticity of demand for sardines is `r model_price_vol$coefficients[[2]]`, meaning that if the log price per kg of sardines (in €) increases by 1 percent, the log volume sold (in kg) decreases by `r model_price_vol$coefficients[[2]]` percentage points. We can reject the null hypothesis that the price elasticity of demand is equal to -1 because the p-value for this coefficient is smaller than 0.05, so this is a statistically significant result, and the linear hypothesis test shows that it is significant.**
 
 # (b) Like in Lecture 8 (see the IV.R script), we will use wind_m_s as an instrument for log(price_euro_kg). To begin, estimate the first-stage regression relating log(price_euro_kg) to wind_m_s. Interpret the estimated coefficient on wind speed. Does it have the expected sign? Also test for the relevance of the instrument and whether it is a “weak” instrument by reporting the proper F-statistic.
 
