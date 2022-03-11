@@ -47,22 +47,9 @@ data_log <- data %>%
 
 model_price_vol <- lm(log_volume_sold_kg ~ log_price_euro_kg, data = data_log)
 summary(model_price_vol)
-
-model_price_vol$coefficients[[2]]
-
-# if price increases 1%, the volume sold decreases by 1.545%
-
-#model_price_vol_table <- tidy(model_price_vol)
-# model_price_vol_table %>%
-#   select(term, estimate, std.error, p.value, conf.low, conf.high) %>% 
-#   kable()
-
-# F-test for non-weak and relevant instruments (Lecture 9, slides 13-14)
-linearHypothesis(model_price_vol, c("log_price_euro_kg=-1"), white.adjust = "hc2")
-# the f-stat is greater than 10
 ```
 
-\noindent - **The price elasticity of demand for sardines is `r model_price_vol$coefficients[[2]]`, meaning that if the price of sardines increases by 1%, the volume sold decreases by `r model_price_vol$coefficients[[2]]` percentage points. We can reject the null hypothesis that the price elasticity of demand is equal to zero because the p-value is shown as significant at the 0.001 level. Our `linearHypothesis()` output shows that the F-statistic is 48.724, which greater than 10.**
+\noindent - **The price elasticity of demand for sardines is `r model_price_vol$coefficients[[2]]`, meaning that if the log price per kg of sardines (in €) increases by 1 percent, the log volume sold (in kg) decreases by `r model_price_vol$coefficients[[2]]` percentage points. We can reject the null hypothesis that the price elasticity of demand is equal to -1 because the p-value for this coefficient is smaller than 0.05, so this is a statistically significant result.**
 
 # (b) Like in Lecture 8 (see the IV.R script), we will use wind_m_s as an instrument for log(price_euro_kg). To begin, estimate the first-stage regression relating log(price_euro_kg) to wind_m_s. Interpret the estimated coefficient on wind speed. Does it have the expected sign? Also test for the relevance of the instrument and whether it is a “weak” instrument by reporting the proper F-statistic.
 
@@ -75,7 +62,7 @@ summary(model_price_wind)
 linearHypothesis(model_price_wind, c("wind_m_s=0"), white.adjust = "hc2")
 ```
 
-\noindent - **The estimated coefficient for wind speed is `r model_price_wind$coefficients[[2]]`, which represents the percent point increase in log price per kg in € for every 1 percent increase in wind speed. Yes, this coefficient has the expected sign, because I presume that more windy conditions make fishing more difficult, which would result in the cost of sardines to increase. The F-statistic is 144.65, which is greater than 10, indicating that this is a non-weak instrument.**
+\noindent - **The estimated coefficient for wind speed is `r model_price_wind$coefficients[[2]]`, which represents the percent point increase in log price per kg (in €) for every 1 unit increase in wind speed (1 m/s). Yes, this coefficient has the expected sign, because I presume that more windy conditions make fishing more difficult, which would result in the cost of sardines to increase. The F-statistic is 144.65, which is greater than 10, indicating that this is a relevant and non-weak instrument.**
 
 # (c) Estimate the TSLS estimator of the price elasticity of demand for sardines using wind_m_s as an instrument for log(price_euro_kg). What is the estimated price elasticity of demand for sardines?
 
@@ -84,12 +71,13 @@ tsls_vol_price_wind <- ivreg(log_volume_sold_kg ~ log_price_euro_kg | wind_m_s, 
 summary(tsls_vol_price_wind)
 ```
 
-\noindent - **The estimated price elasticity of demand for sardines is `r tsls_vol_price_wind$coefficients[[2]]`, which represents the percent decrease in volume of sardines sold for every 1% increase in price, using wind as an instrument.**
+\noindent - **The estimated price elasticity of demand for sardines is `r tsls_vol_price_wind$coefficients[[2]]`, which represents the percent point decrease in log volume of sardines sold (in kg) for every 1 percent increase in log price per kg (in €), using wind as an instrument.**
 
 # (d) Repeat the exercise in (c), but include fixed effects for each year, month, and country. [Hint: you can use the command “as.factor(country) + as.factor(year) + as.factor(month)” to the ivreg function in R]. Report the estimated price elasticity of demand and the F-statistic testing for relevant and non-weak instruments.
 
 ```{r}
-fe_model <- lm(log_price_euro_kg ~ as.factor(country) + as.factor(year) + as.factor(month) + wind_m_s, data = data_log)
+fe_model <- lm(log_price_euro_kg ~ as.factor(country) + as.factor(year) 
+               + as.factor(month) + wind_m_s, data = data_log)
 summary(fe_model)
 
 linearHypothesis(fe_model, c("wind_m_s=0"), white.adjust = "hc2")
@@ -106,7 +94,7 @@ summary(fe_tsls_vol_price_wind)
 ```
 
 
-\noindent - **The estimated price elasticity of demand is -1.250. The F-statistic is 77.658, which is greater than 10, so these instruments are non-weak and relevant.**
+\noindent - **The estimated price elasticity of demand is -1.250 with fixed effects for month, year, and country. The F-statistic is 77.658, which is greater than 10, so this instrument is non-weak and relevant.**
 
 
 
